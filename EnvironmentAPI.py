@@ -4,7 +4,7 @@ import chess
 
 def print_board(board):
     x=chess.Board(board)
-    print(x)
+    print(x.unicode())
     print(' ')
         
     

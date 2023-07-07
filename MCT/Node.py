@@ -6,7 +6,7 @@ import chess
 
 
 class Node():
-    def __init__(self,preceding_action,parent,board,whitesTurn):
+    def __init__(self,preceding_action,parent,board):
         self.visits=0
         self.value=0
         self.Q=0
@@ -19,7 +19,7 @@ class Node():
         self.terminal=is_terminal(chess.Board(board))
     
 
-        self.whitesTurn=whitesTurn
+        self.whitesTurn=chess.Board(board).turn
 
     def __str__(self):
         x='root' if not self.preceding_action else 'preceding_action'
@@ -41,7 +41,7 @@ class Node():
         moves=get_legal_moves(temp)
         for r in moves:
             temp.push(r)
-            self.children.append(Node(r,self,temp.fen(),not self.whitesTurn))
+            self.children.append(Node(r,self,temp.fen()))
             temp.pop()
 
 

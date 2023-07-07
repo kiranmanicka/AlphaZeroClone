@@ -1,15 +1,15 @@
 import sys
 import os
 #sys.path.append('../ChessEngine')
-from MonteCarloTree.Node import Node
+from MCT.Node import Node
 from EnvironmentAPI import print_board
 from Utils import upper_confidence_score
 import random
 import chess
 
 class MonteCarloTree():
-    def __init__(self,model):
-        self.root=Node(None,None,chess.Board().fen(),whitesTurn=True)
+    def __init__(self,model,board=chess.Board().fen()):
+        self.root=Node(None,None,board)
         self.model=model
 
     def __str__(self):

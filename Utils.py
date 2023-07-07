@@ -3,6 +3,8 @@ import torch
 import chess
 
 
+
+
 def upper_confidence_score(parent,training=False,c=.5):
     if training:
         return random.randrange(len(parent.children))
@@ -24,22 +26,21 @@ for rankIndex,r in enumerate(reversed(range(1,9))):
 # print('')
 # print(blackBoard)
 
-def encode_input_board(preceding_action,board,whitesTurn):
+def encode_input_board(node):
     #p1=0 when playersTurn=True but when playersTurn=False p1=1
     #use board object of find out if castling move is available
     #board is a string because we will pass in root nodes
-    board=chess.Board(board)
-    board.pop(preceding_action)
-    #check if castling is an opton for p2
-    board.push(preceding_action)
+    #castling moves for p2= white is p1 e1c1,e1g1  black is p1 e8g8,e8c8
+    #castling moves for p1= white is p1
     sample=torch.zeros(16,8,8)
-    if whitesTurn:
+    check_castle(sample,node)
+    board=chess.Board(node.board_state)
+    if node.whitesTurn:
         bluePrint=whiteBoard
     else:
         bluePrint=blackBoard  
     for j in bluePrint:
         piece=str(board.piece_at(grab_index(j)))
-        print(piece)
         matcher(sample,piece,bluePrint,j)
             
     return sample
@@ -64,7 +65,6 @@ def matcher(sample,piece,bluePrint,j):
     if piece=="p":
         sample[6*blackIndex+pieces['pawn']][bluePrint[j][0]][bluePrint[j][1]]=1
     if piece=="r":
-        print(6*blackIndex+pieces['rook'],bluePrint[j][0],bluePrint[j][1])
         sample[6*blackIndex+pieces['rook']][bluePrint[j][0]][bluePrint[j][1]]=1
     if piece=="n":
         sample[6*blackIndex+pieces['knight']][bluePrint[j][0]][bluePrint[j][1]]=1
@@ -75,14 +75,26 @@ def matcher(sample,piece,bluePrint,j):
     if piece=="k":
         sample[6*blackIndex+pieces['king']][bluePrint[j][0]][bluePrint[j][1]]=1
             
-
+def check_castle(sample,node):
+    board=chess.Board(node.board_state)
+    player_alignment=(chess.WHITE,chess.BLACK) if node.whitesTurn else (chess.BLACK,chess.WHITE)
+    if board.has_kingside_castling_rights(player_alignment[0]):
+        sample[12]=torch.ones(8,8)
+    if board.has_queenside_castling_rights(player_alignment[0]):
+        sample[13]=torch.ones(8,8)
+    if board.has_kingside_castling_rights(player_alignment[1]):
+        sample[14]=torch.ones(8,8)
+    if board.has_queenside_castling_rights(player_alignment[1]):
+        sample[15]=torch.ones(8,8)
 
 
 def grab_index(key):
     keeper={'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7}
     return (int(key[-1])-1)*8+keeper[key[0]]
 
-print(encode_input_board(chess.Board(),True))
+def move(str):
+    return chess.Move.from_uci(str)
+
 
 
 
