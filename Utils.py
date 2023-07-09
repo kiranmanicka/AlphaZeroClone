@@ -1,8 +1,11 @@
 import random
 import torch
 import chess
+import numpy as np
+from numpy.linalg import norm
+import math
 
-
+#need to revise angle calculation for p2 moves
 
 
 def upper_confidence_score(parent,training=False,c=.5):
@@ -22,9 +25,85 @@ for rankIndex,r in enumerate(reversed(range(1,9))):
         blackBoard[j+str(r)]=(-1*rankIndex+7,-1*fileIndex+7)
         i+=1
 
-# print(whiteBoard)
-# print('')
-# print(blackBoard)
+def encode_possible_moves(node):
+    children=node.children
+    board=chess.Board(node.board_state)
+    target_tensor=torch.zeros(73,8,8)
+
+
+    if node.whitesTurn:
+        bluePrint=whiteBoard
+    else:
+        bluePrint=blackBoard 
+
+    for r in children:
+        move=str(r.preceding_action)
+        x=move[0]+move[1]
+        piece=str(board.piece_at(chess.parse_square(x)))
+        if (piece =='P' or piece=='p')  and len(move)>4:
+            pawn_promotion_info(target_tensor,move,bluePrint)
+        elif piece=='N' or piece=='n':
+            knight_move_info(target_tensor,move,bluePrint,node.whitesTurn)
+        else:
+            queen_move_info(target_tensor,square_to_square_move,bluePrint)
+        
+    for index,r in enumerate(target_tensor):
+        print(index)
+        print(r)
+
+directional_promotion={'left':64,'straight':67,'right':70}
+underpromotion_index={'n':0,'b':1,'r':2}
+
+def pawn_promotion_info(target_tensor,move,bluePrint,whitesTurn):
+    if move[-1]=='q':
+        queen_move_info(target_tensor,move,bluePrint)
+        return
+    
+    angle,distance=get_angle_distance(move,whitesTurn)
+    angle=int(angel/45)
+    plane=None
+    if angle== 1:
+        plane=directional_promotion['right']+underpromotion_index[move[-1]]
+    elif angle== 2:
+        plane=directional_promotion['straight']+underpromotion_index[move[-1]]
+    elif angle== 3:
+        plane=directional_promotion['left']+underpromotion_index[move[-1]]
+    else:
+        raise Exception("angle is invalid for pawn underpromotion")
+    square=move[0].upper()+move[1]
+    index=bluePrint[square]
+    target_tensor[plane][index[0]][index[1]]=1
+
+def knight_move_info(target_tensor,move,bluePrint,whitesTurn):
+    angle,distance=get_angle_distance(move,whitesTurn)
+    print(move,angle)
+    angle=int(angle/45)
+    move=move[0].upper()+move[1]
+    index=bluePrint[move]
+    target_tensor[56+angle][index[0]][index[1]]=1
+    
+    
+def queen_move_info(target_tensor,move,bluePrint,whitesTurn):
+    angle,distance=get_angle_distance(move,whitesTurn)
+    angle=int(angle/45)
+    plane=angle*7+(distance-1)
+    index=bluePrint[move[0].upper()+str(move[1])]
+    target_tensor[plane][index[0]][index[1]]=1
+
+def get_angle_distance(move,whitesTurn):
+    fq=move[:2]
+    sq=move[2:4]
+    vector=np.array([ord(sq[0])-ord(fq[0]),int(sq[1])-int(fq[1])])
+    base=np.array([1,0])
+    angle=np.arccos(vector.dot(base)/(norm(vector)*norm(base)))
+    if vector[1]<base[1]:
+        angle=(math.pi*2)-angle
+    angle=math.degrees(angle)
+    if not whitesTurn: angle+=180
+    angle=angle-360 if angle>=360 else angle
+    distance=np.max(np.abs(vector))
+    return angle,distance
+
 
 def encode_input_board(node):
     #p1=0 when playersTurn=True but when playersTurn=False p1=1

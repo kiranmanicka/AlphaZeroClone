@@ -35,9 +35,9 @@ class Node():
         self.visits+=1
         self.Q=self.value/self.visits
 
-    def createChildren(self,board):
+    def createChildren(self):
         #accepts fen value
-        temp=chess.Board(board)
+        temp=chess.Board(self.board_state)
         moves=get_legal_moves(temp)
         for r in moves:
             temp.push(r)

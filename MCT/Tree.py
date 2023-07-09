@@ -65,7 +65,7 @@ class MonteCarloTree():
         return curr_node
     
     def expand(self,node):
-        node.createChildren(node.board_state)
+        node.createChildren()
 
     def simulate(self,node,training=False):
         if training:
