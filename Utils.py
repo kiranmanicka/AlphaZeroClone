@@ -1,5 +1,6 @@
 import random
 import torch
+import torch.nn as nn
 import chess
 import numpy as np
 from numpy.linalg import norm
@@ -25,42 +26,45 @@ for rankIndex,r in enumerate(reversed(range(1,9))):
         blackBoard[j+str(r)]=(-1*rankIndex+7,-1*fileIndex+7)
         i+=1
 
-def encode_possible_moves(node):
+def encode_target_moves(node):
     children=node.children
     board=chess.Board(node.board_state)
     target_tensor=torch.zeros(73,8,8)
 
+    if node.terminal[0]:
+        return target_tensor
 
     if node.whitesTurn:
         bluePrint=whiteBoard
     else:
         bluePrint=blackBoard 
-
-    for r in children:
+    visits=[x.visits for x in children]
+    visits=torch.tensor(visits,dtype=torch.float64)
+    softmax_visits=nn.functional.softmax(visits,dim=0)
+    for index,r in enumerate(children):
         move=str(r.preceding_action)
         x=move[0]+move[1]
         piece=str(board.piece_at(chess.parse_square(x)))
         if (piece =='P' or piece=='p')  and len(move)>4:
-            pawn_promotion_info(target_tensor,move,bluePrint)
+            plane,index1,index2=pawn_promotion_info(target_tensor,move,bluePrint,node.whitesTurn)
         elif piece=='N' or piece=='n':
-            knight_move_info(target_tensor,move,bluePrint,node.whitesTurn)
+            plane,index1,index2=knight_move_info(target_tensor,move,bluePrint,node.whitesTurn)
         else:
-            queen_move_info(target_tensor,square_to_square_move,bluePrint)
+            plane,index1,index2=queen_move_info(target_tensor,move,bluePrint,node.whitesTurn)
+
+        target_tensor[plane][index1][index2]=softmax_visits[index]
         
-    for index,r in enumerate(target_tensor):
-        print(index)
-        print(r)
+    return target_tensor
 
 directional_promotion={'left':64,'straight':67,'right':70}
 underpromotion_index={'n':0,'b':1,'r':2}
 
 def pawn_promotion_info(target_tensor,move,bluePrint,whitesTurn):
     if move[-1]=='q':
-        queen_move_info(target_tensor,move,bluePrint)
-        return
+        return queen_move_info(target_tensor,move,bluePrint,whitesTurn)
     
     angle,distance=get_angle_distance(move,whitesTurn)
-    angle=int(angel/45)
+    angle=int(angle/45)
     plane=None
     if angle== 1:
         plane=directional_promotion['right']+underpromotion_index[move[-1]]
@@ -72,15 +76,14 @@ def pawn_promotion_info(target_tensor,move,bluePrint,whitesTurn):
         raise Exception("angle is invalid for pawn underpromotion")
     square=move[0].upper()+move[1]
     index=bluePrint[square]
-    target_tensor[plane][index[0]][index[1]]=1
+    return plane,index[0],index[1]
 
 def knight_move_info(target_tensor,move,bluePrint,whitesTurn):
     angle,distance=get_angle_distance(move,whitesTurn)
-    print(move,angle)
     angle=int(angle/45)
     move=move[0].upper()+move[1]
     index=bluePrint[move]
-    target_tensor[56+angle][index[0]][index[1]]=1
+    return 56+angle,index[0],index[1]
     
     
 def queen_move_info(target_tensor,move,bluePrint,whitesTurn):
@@ -88,7 +91,7 @@ def queen_move_info(target_tensor,move,bluePrint,whitesTurn):
     angle=int(angle/45)
     plane=angle*7+(distance-1)
     index=bluePrint[move[0].upper()+str(move[1])]
-    target_tensor[plane][index[0]][index[1]]=1
+    return plane, index[0], index[1]
 
 def get_angle_distance(move,whitesTurn):
     fq=move[:2]

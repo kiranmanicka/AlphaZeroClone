@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torchsummary import summary
+import torch.optim as optim
 
 
 class AlphaZeroNetwork(nn.Module):
@@ -111,7 +112,31 @@ class PolicyHead(nn.Module):
         x=self.softmax(x)
         return x.view(-1,73,8,8)
 
-model=AlphaZeroNetwork(10,16)
+
+class ValuePolicyLoss(nn.Module):
+    def __init__(self,lambdal1):
+        super().__init__()
+        self.lambdal1=lambdal1
+    def forward(self,pred,target,model):
+        value_pred=pred[0]
+        value_target=target[0]
+        policy_pred=pred[1]
+        policy_target=target[1]
+
+        MSE=nn.MSELoss()
+        CCE=nn.CrossEntropyLoss()
+
+        l1=0
+        for p in model.parameters():
+            l1=l1+p.abs().sum()
+
+        return MSE(value_prxed,value_target)+CCE(policy_pred,policy_target)+self.lambdal1*l1
+
+    
+
+AlphaZeroModel=AlphaZeroNetwork(10,16)
+optimizer=optim.SGD(AlphaZeroModel.parameters(),lr=.01)
+AlphaZeroLoss=ValuePolicyLoss(.2)
 
 
 

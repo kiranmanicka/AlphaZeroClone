@@ -1,38 +1,49 @@
-from MonteCarloTree.Tree import MonteCarloTree
-from Dataset import Dataset
+from MCT.Tree import MonteCarloTree
+import Dataset
+from Dataset import Dataset as dataset
 import sys
 import chess
 import chess.svg
 from EnvironmentAPI import print_board
+from Model import AlphaZeroNetwork
 
 
 
 
-dataset=Dataset(max_samples=30000)
+
+
+def play():
+    finished_games=[]
+    for _ in range(1):
+        state_of_game=run_game()
+        finished_games.append(state_of_game)
+        print("finished game")
+    d=dataset(max_samples=30000)
+    d.add_games(finished_games)
+
 
 
 def run_game():
     training_data=[]
     tree=MonteCarloTree(None)
     state_of_game=tree.root
+    i=0
     while state_of_game.terminal[0] != True:
         tree.compute_episode(iterations=100)
         state_of_game=tree.make_move()
-    if state_of_game.terminal[1]=='checkmate':
-        if state_of_game.whitesTurn==True:
-            winner="black"
-        else:
-            winner="white"
-    else:
-        winner=None
+        print(chess.Board(state_of_game.board_state).unicode())
+        i+=1
+    return state_of_game
 
 
-    return (state_of_game,winner)
-winner=None
-while winner==None or winner=='white':
-    state_of_game,winner=run_game()
-    print(winner)
-    print_board(state_of_game.board_state)
+play()
+#play()
+print(len(Dataset.dq))
+
+#inp,value,policy=dataset.query(10)
+
+
+    
     
 
     
