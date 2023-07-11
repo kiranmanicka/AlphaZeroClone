@@ -9,13 +9,6 @@ import math
 #need to revise angle calculation for p2 moves
 
 
-def upper_confidence_score(parent,training=False,c=.5):
-    if training:
-        return random.randrange(len(parent.children))
-    else:
-        return 0
-        #should pick smallest Q value and multiply my -1
-
 pieces={'pawn':0,'rook':1,'knight':2,'bishop':3,'queen':4,'king':5}
 blackBoard={}
 whiteBoard={}
@@ -42,26 +35,28 @@ def encode_target_moves(node):
     visits=torch.tensor(visits,dtype=torch.float64)
     softmax_visits=nn.functional.softmax(visits,dim=0)
     for index,r in enumerate(children):
-        move=str(r.preceding_action)
-        x=move[0]+move[1]
-        piece=str(board.piece_at(chess.parse_square(x)))
-        if (piece =='P' or piece=='p')  and len(move)>4:
-            plane,index1,index2=pawn_promotion_info(target_tensor,move,bluePrint,node.whitesTurn)
-        elif piece=='N' or piece=='n':
-            plane,index1,index2=knight_move_info(target_tensor,move,bluePrint,node.whitesTurn)
-        else:
-            plane,index1,index2=queen_move_info(target_tensor,move,bluePrint,node.whitesTurn)
-
+        plane,index1,index2=get_indices(r,bluePrint,node.whitesTurn,board)
         target_tensor[plane][index1][index2]=softmax_visits[index]
-        
     return target_tensor
+
+def get_indices(child,bluePrint,whitesTurn,board,move=None):
+    move=str(move) if child is None else str(child.preceding_action)
+    x=move[0]+move[1]
+    piece=str(board.piece_at(chess.parse_square(x)))
+    if (piece =='P' or piece=='p')  and len(move)>4:
+        return pawn_promotion_info(move,bluePrint,whitesTurn)
+    elif piece=='N' or piece=='n':
+        return knight_move_info(move,bluePrint,whitesTurn)
+    else:
+        return queen_move_info(move,bluePrint,whitesTurn)
+
 
 directional_promotion={'left':64,'straight':67,'right':70}
 underpromotion_index={'n':0,'b':1,'r':2}
 
-def pawn_promotion_info(target_tensor,move,bluePrint,whitesTurn):
+def pawn_promotion_info(move,bluePrint,whitesTurn):
     if move[-1]=='q':
-        return queen_move_info(target_tensor,move,bluePrint,whitesTurn)
+        return queen_move_info(move,bluePrint,whitesTurn)
     
     angle,distance=get_angle_distance(move,whitesTurn)
     angle=int(angle/45)
@@ -78,7 +73,7 @@ def pawn_promotion_info(target_tensor,move,bluePrint,whitesTurn):
     index=bluePrint[square]
     return plane,index[0],index[1]
 
-def knight_move_info(target_tensor,move,bluePrint,whitesTurn):
+def knight_move_info(move,bluePrint,whitesTurn):
     angle,distance=get_angle_distance(move,whitesTurn)
     angle=int(angle/45)
     move=move[0].upper()+move[1]
@@ -86,7 +81,7 @@ def knight_move_info(target_tensor,move,bluePrint,whitesTurn):
     return 56+angle,index[0],index[1]
     
     
-def queen_move_info(target_tensor,move,bluePrint,whitesTurn):
+def queen_move_info(move,bluePrint,whitesTurn):
     angle,distance=get_angle_distance(move,whitesTurn)
     angle=int(angle/45)
     plane=angle*7+(distance-1)

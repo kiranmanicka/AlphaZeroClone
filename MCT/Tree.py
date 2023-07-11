@@ -3,9 +3,9 @@ import os
 #sys.path.append('../ChessEngine')
 from MCT.Node import Node
 from EnvironmentAPI import print_board
-from Utils import upper_confidence_score
 import random
 import chess
+import math
 
 class MonteCarloTree():
     def __init__(self,model,board=chess.Board().fen()):
@@ -27,7 +27,13 @@ class MonteCarloTree():
         return ""
 
 
-    def make_move(self):
+    def make_move(self,otherMove=None):
+        if otherMove:
+            for r in self.root.children:
+                if str(r.preceding_action)==otherMove:
+                    self.root=r
+                    return self.root
+            raise Exception("move not found among child nodes")    
         total_visits=[x.visits for x in self.root.children]
         next_node_index=total_visits.index(max(total_visits))
         next_node=self.root.children[next_node_index]
@@ -45,38 +51,54 @@ class MonteCarloTree():
                     value=-1
                 else:
                     value=0
-                whiteValue=node.whitesTurn
             elif node.visits==0:
-                whiteValue=node.whitesTurn
-                value=self.simulate(node,training=True)
+                value=self.simulate(node,training=False)
             else:
                 self.expand(node)
                 node=node.children[0]
-                whiteValue=node.whitesTurn
-                value=self.simulate(node,training=True)
+                value=self.simulate(node,training=False)
 
-            self.backprop(value,node,whiteValue)
+            self.backprop(value,node,node.whitesTurn)
 
     def select(self):
         curr_node=self.root
         while curr_node.children:
-            index=upper_confidence_score(curr_node,training=True)
+            index=self.upper_confidence_score(curr_node,training=False)
             curr_node=curr_node.children[index]
         return curr_node
     
     def expand(self,node):
-        node.createChildren()
+        node.createChildren(self.model)
 
     def simulate(self,node,training=False):
         if training:
             return .1* random.randint(-10,10)
         else:
             #model will return predicted value
-            return 1
+            return (self.model(encode_input_board(node))[1]).item()
 
     def backprop(self,value,node,whiteValue):
         while node:
             node.recalculateNode(value,whiteValue)
             node=node.parent
+
+    def upper_confidence_score(self,parent,training=False,c=.5):
+        #print(type(parent))
+        #print(training)
+        if training:
+            return random.randrange(len(parent.children))
+        else:
+            parent_visits=parent.visits
+            children=parent.children
+            
+            def score(node):
+                return (-1*node.Q)+c*node.P*math.sqrt(math.log(parent_visits)/max(1,node.visits))
+
+            UCB_scores=[score(x) for x in children]
+            return UCB_scores.index(max(UCB_scores))
+
+
+
+            #should pick smallest Q value and multiply my -1
 
 

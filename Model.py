@@ -122,7 +122,6 @@ class ValuePolicyLoss(nn.Module):
         value_target=target[0]
         policy_pred=pred[1]
         policy_target=target[1]
-
         MSE=nn.MSELoss()
         CCE=nn.CrossEntropyLoss()
 
@@ -130,7 +129,7 @@ class ValuePolicyLoss(nn.Module):
         for p in model.parameters():
             l1=l1+p.abs().sum()
 
-        return MSE(value_prxed,value_target)+CCE(policy_pred,policy_target)+self.lambdal1*l1
+        return MSE(value_pred,value_target)+CCE(policy_pred,policy_target)+self.lambdal1*l1
 
     
 

@@ -3,6 +3,7 @@ import random
 from Utils import encode_input_board,encode_target_moves
 import torch
 
+
 dq=deque(maxlen=20000)
 unencoded_states_holder=[]
 
@@ -30,7 +31,7 @@ class Dataset():
             value=0
         else:
             value=node.value
-        keeper.append((encode_input_board(node),value,encode_target_moves(node)))
+        keeper.append((encode_input_board(node),torch.tensor(value),encode_target_moves(node)))
         node=node.parent
         while node:
             value*=-1
@@ -39,14 +40,13 @@ class Dataset():
         del(node)
         return keeper
 
-    def query(self,batch_size):
-        samples=random.sample(dq,batch_size)
+    def query(self):
+        samples=random.sample(dq,len(dq))
         inp=torch.stack([x[0] for x in samples])
-        print(inp.shape)
+        for x in samples:
+            print(x[1])
         value=torch.stack([x[1] for x in samples])
-        print(value.shape)
         policy=torch.stack([x[2] for x in samples])
-        print(policy.shape)
         return inp,value,policy
 
 
