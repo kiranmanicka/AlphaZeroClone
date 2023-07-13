@@ -125,9 +125,7 @@ class ValuePolicyLoss(nn.Module):
         MSE=nn.MSELoss()
         CCE=nn.CrossEntropyLoss()
 
-        l1=0
-        for p in model.parameters():
-            l1=l1+p.abs().sum()
+        l1=torch.sum(torch.stack([p.abs().sum() for p in model.parameters()]))
 
         return MSE(value_pred,value_target)+CCE(policy_pred,policy_target)+self.lambdal1*l1
 

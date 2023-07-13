@@ -37,6 +37,7 @@ def encode_target_moves(node):
     for index,r in enumerate(children):
         plane,index1,index2=get_indices(r,bluePrint,node.whitesTurn,board)
         target_tensor[plane][index1][index2]=softmax_visits[index]
+    target_tensor.detach()
     return target_tensor
 
 def get_indices(child,bluePrint,whitesTurn,board,move=None):
@@ -119,7 +120,8 @@ def encode_input_board(node):
     for j in bluePrint:
         piece=str(board.piece_at(grab_index(j)))
         matcher(sample,piece,bluePrint,j)
-            
+
+    sample.detach() 
     return sample
 
 def matcher(sample,piece,bluePrint,j):

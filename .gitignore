@@ -2,3 +2,5 @@ venv/
 test.py
 test2.py
 .DS_Store
+model0.pth
+model1.pth

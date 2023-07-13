@@ -28,7 +28,7 @@ class Node():
 
 
     def recalculateNode(self,value,whiteValue):
-        if (whiteValue and self.whitesTurn) or (not whiteValue and not self.whitesTurn):
+        if whiteValue==self.whitesTurn:
             self.value+=value
             
         else:
@@ -36,11 +36,11 @@ class Node():
         self.visits+=1
         self.Q=self.value/self.visits
 
-    def createChildren(self,model):
+    def createChildren(self,probabilities):
         #accepts fen value
         temp=chess.Board(self.board_state)
         moves=get_legal_moves(temp)
-        move_probabilities=(model(encode_input_board(self).reshape(1,16,8,8))[0]).reshape(73,8,8)
+        move_probabilities=probabilities.reshape(73,8,8).detach()
         
         bluePrint=whiteBoard if self.whitesTurn else blackBoard
         
