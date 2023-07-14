@@ -7,7 +7,6 @@ def train(model,epochs=5,batch_size=1000):
     inp,value,policy=d.query()
     for epoch in range(epochs):
         #total_accuracy=0
-        print(epoch)
         for i in range(0,len(inp),batch_size):
             print(i)
             if i+batch_size > len(inp):

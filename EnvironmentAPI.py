@@ -16,9 +16,12 @@ def get_legal_moves(board):
 def is_terminal(board):
     #if kind is under check and no available move check mate
     #if king is not under check and no available moves stalemate
-    if board.is_check and len(get_legal_moves(board))==0:
+    # print("inside terminal function", board.is_check==True)
+    # if board.is_check():
+    #     print("checked boared")
+    if board.is_check() and len(get_legal_moves(board))==0:
         return(True,"checkmate")
-    if not board.is_check and len(get_legal_moves(board))==0:
+    if not board.is_check() and len(get_legal_moves(board))==0:
         return(True,"draw")
     if board.is_insufficient_material():
         return (True,"draw")

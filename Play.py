@@ -16,17 +16,18 @@ import torch
 
 
 
-def consumer(num_processes,num_games,model):
+def consumer(num_processes,num_games,model,num_improvements):
     q=Queue()
     finished_process_counter=Value('i',0)
     value_count=Value('i',0)
     jobs=[]
     
-    
+    i=0
     for j in range(num_processes):
-        p=mp.Process(target=producer,args=(q,finished_process_counter,num_games,value_count,model))
+        p=mp.Process(target=producer,args=(q,finished_process_counter,num_games,value_count,model,i))
         jobs.append(p)
         p.start()
+        i+=1
     
     while not (finished_process_counter.value==num_processes and value_count.value==0): 
         x=q.get()
@@ -39,21 +40,23 @@ def consumer(num_processes,num_games,model):
 
 
 
-def producer(q,finished_process_counter,num_games,value_count,model):
+def producer(q,finished_process_counter,num_games,value_count,model,process_id):
     d=dataset()
-    finished_games=play(num_games,model)
+    finished_games=play(num_games,model,process_id)
     transformed_data=d.encode(finished_games)
     value_count.value+=len(transformed_data)
     for index,n in enumerate(transformed_data):
         q.put(n)
     finished_process_counter.value=finished_process_counter.value+1
 
-def play(num_games,model):
+def play(num_games,model,process_id):
     finished_games=[]
     for r in range(num_games):
-        state_of_game=run_game(model)
+        state_of_game,move_counter=run_game(model)
         finished_games.append(state_of_game)
-        print("findshed game",r)
+        print("findshed game: ",r, "on process:",process_id)
+        print(chess.Board(finished_games[r].board_state).unicode())
+        print(finished_games[r].terminal,finished_games[r].whitesTurn,move_counter)
     return finished_games
     
 
@@ -63,12 +66,11 @@ def run_game(model):
     state_of_game=tree.root
     i=0
     while state_of_game.terminal[0] != True:
-        tree.compute_episode(iterations=2)
+        tree.compute_episode(iterations=100)
         state_of_game=tree.make_move()
-        i+=1
-        #print(chess.Board(state_of_game.board_state).unicode())
-        #print('')
-    return state_of_game
+        # print(chess.Board(state_of_game.board_state).unicode())
+        # print('')
+    return state_of_game,tree.move_counter
 
 if __name__=="__main__":
 
@@ -80,24 +82,25 @@ if __name__=="__main__":
         with torch.no_grad():
             stats=benchmark_test(old_model,new_model,3)
         print(stats)
-    else:
+    elif sys.argv[1]=="play":
 
 
-        source_version_number=0
-        destination_version_number=1
+        source_version_number=1
+        destination_version_number=2
         SOURCE_FILE="model"+str(source_version_number)+".pth"
         DESTINATION_FILE="model"+str(destination_version_number)+".pth"
         
-        num_improvements=1
-        steps_to_save_file=1
+        num_improvements=6
+        steps_to_save_file=3
 
         new_model=AlphaZeroNetwork(10,16)
         new_model.load_state_dict(torch.load(SOURCE_FILE))
 
         for r in range(1,num_improvements+1):
             new_model.eval()
+            print(r," num improvements")
             with torch.no_grad():
-                consumer(os.cpu_count(),1,new_model)
+                consumer(os.cpu_count(),2,new_model,num_improvements)
             print(len(Dataset.dq))
             new_model.train()
             train(new_model,batch_size=1000)

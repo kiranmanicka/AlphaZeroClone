@@ -46,7 +46,6 @@ class MonteCarloTree():
             else:
                 return x.visits
         total_visits=[process(x) for x in self.root.children]
-        print(total_visits)
         maximum_value=max(total_visits)
         indices = [i for i, x in enumerate(total_visits) if x ==maximum_value ]
         next_node_index=random.choice(indices)
@@ -54,16 +53,15 @@ class MonteCarloTree():
         self.root=next_node
         self.three_fold_tracker[self.process_fen(self.root.board_state)]+=1
         self.move_counter+=1
-        if self.move_counter>10:
+        if self.move_counter>400:
             value=self.point_value(chess.Board(self.root.board_state))
             if value==0:
                 self.root.terminal=(True,"draw")
             else:
-                value=1 if value>0 else -1
                 if self.root.whitesTurn:
-                    self.root.terminal=(True,"checkmate") if value==-1 else self.root.terminal
+                    self.root.terminal=(True,"checkmate") if value<0 else self.root.terminal
                 else:
-                    self.root.terminal=(True,"checkmate") if value==1 else self.root.terminal
+                    self.root.terminal=(True,"checkmate") if value>0 else self.root.terminal
         return self.root
 
     def point_value(self,board):
@@ -72,7 +70,6 @@ class MonteCarloTree():
             piece=str(board.piece_at(z))
             if piece!='None':
                 total+=self.points[piece]
-        print("total",total)
         return total
 
     def compute_episode(self,iterations=1600):
@@ -84,7 +81,6 @@ class MonteCarloTree():
             if node.terminal[0]:
                 result=node.terminal[1]
                 if result=="checkmate":
-                    #print('here')
                     value=-1
                 else:
                     value=0
