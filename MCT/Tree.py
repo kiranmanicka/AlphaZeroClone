@@ -98,17 +98,6 @@ class MonteCarloTree():
             index=self.upper_confidence_score(curr_node,training=False)
             curr_node=curr_node.children[index]
         return curr_node
-    
-    # def expand(self,node):
-    #     node.createChildren(self.model)
-
-    # def get_value(self,node,training=False):
-    #     if training:
-    #         return .1* random.randint(-10,10)
-    #     else:
-    #         #model will return predicted value
-    #         input_board=encode_input_board(node).reshape(1,16,8,8)
-    #         return self.model(input_board)[1].item()
 
     def backprop(self,value,node,whiteValue):
         while node:
@@ -133,9 +122,5 @@ class MonteCarloTree():
     def process_fen(self,fen):
         x=fen.split(' ')
         return x[0]
-
-
-
-            #should pick smallest Q value and multiply my -1
 
 

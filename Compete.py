@@ -25,11 +25,11 @@ def play_one_game(old_model,new_model,new_model_is_white,r):
     else:
         players=[newTree,oldTree]=[MonteCarloTree(new_model),MonteCarloTree(old_model)]
     currTurn=True
-    
+    move_counter=0
     state_of_game=players[currTurn].root
     while state_of_game.terminal[0]!=True:
-        oldTree.compute_episode(iterations=10)
-        newTree.compute_episode(iterations=10)
+        oldTree.compute_episode(iterations=30)
+        newTree.compute_episode(iterations=30)
 
         x=players[currTurn].make_move()
         recentTurn=players[currTurn].root.preceding_action

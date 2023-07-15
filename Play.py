@@ -54,9 +54,6 @@ def play(num_games,model,process_id):
     for r in range(num_games):
         state_of_game,move_counter=run_game(model)
         finished_games.append(state_of_game)
-        print("findshed game: ",r, "on process:",process_id)
-        print(chess.Board(finished_games[r].board_state).unicode())
-        print(finished_games[r].terminal,finished_games[r].whitesTurn,move_counter)
     return finished_games
     
 
@@ -68,8 +65,6 @@ def run_game(model):
     while state_of_game.terminal[0] != True:
         tree.compute_episode(iterations=100)
         state_of_game=tree.make_move()
-        # print(chess.Board(state_of_game.board_state).unicode())
-        # print('')
     return state_of_game,tree.move_counter
 
 if __name__=="__main__":
@@ -80,43 +75,34 @@ if __name__=="__main__":
         new_model.load_state_dict(torch.load(sys.argv[3]+".pth"))
         old_model.eval(),new_model.eval()
         with torch.no_grad():
-            stats=benchmark_test(old_model,new_model,3)
+            stats=benchmark_test(old_model,new_model,15)
         print(stats)
-    elif sys.argv[1]=="play":
-
-
-        source_version_number=1
-        destination_version_number=2
+    else:
+        #SPECIFY SOURCE AND DESTINATION NUMBERS
+        #SOURCE VERSION NUMBER DOES NOT MATTER WHEN PLAY.PY IS EXECUTED WITH "CREATE"
+        source_version_number=2
+        destination_version_number=3
         SOURCE_FILE="model"+str(source_version_number)+".pth"
         DESTINATION_FILE="model"+str(destination_version_number)+".pth"
         
-        num_improvements=6
+        num_improvements=3
         steps_to_save_file=3
 
-        new_model=AlphaZeroNetwork(10,16)
-        new_model.load_state_dict(torch.load(SOURCE_FILE))
+        if sys.argv[1]=="create":
+            new_model=AlphaZeroNetwork(10,16)
+        else:
+            new_model=AlphaZeroNetwork(10,16)
+            new_model.load_state_dict(torch.load(SOURCE_FILE))
 
         for r in range(1,num_improvements+1):
             new_model.eval()
-            print(r," num improvements")
             with torch.no_grad():
                 consumer(os.cpu_count(),2,new_model,num_improvements)
-            print(len(Dataset.dq))
             new_model.train()
             train(new_model,batch_size=1000)
             if r%steps_to_save_file==0:
                 torch.save(new_model.state_dict(),DESTINATION_FILE)
-            #save old_model to disk
 
-
-
-
-
-
-#play()
-#print(len(Dataset.dq))
-
-#inp,value,policy=dataset.query(10)
 
 
     

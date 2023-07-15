@@ -13,9 +13,7 @@ class Dataset():
 
     def encode(self,finished_games):
         encoded_states=[self.encode_state(r) for r in finished_games]
-        #print('insdide encode')
         encoded_states = sum(encoded_states, [])
-        #print(len(encoded_states))
         return encoded_states
     
     def encode_state(self,node):
